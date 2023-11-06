@@ -5,6 +5,8 @@ using DocumentFormat.OpenXml.Spreadsheet;
 using OpenXmlEngine;
 using OpenXmlEngine.HelperClasses;
 using System.Globalization;
+using AttendanceLibrary.Models;
+using DocumentFormat.OpenXml.Office2010.ExcelAc;
 
 const string filePath = @"D:\SampleData\OpenXmlSamples\attendace.xlsx";
 
@@ -113,14 +115,18 @@ var rowList = new List<Row>();
 var mergeList = new List<MergeCell>();
 var conditionList = new List<ConditionalFormatting>();
 
-
 var daysCellReferences = new ListValue<StringValue>();
 var weekendCellReferences = new ListValue<StringValue>();
 var specialDaysCellReferences = new ListValue<StringValue>();
 
 
 // TODO: List with ListValue<StringValue>
-//List<ListValue<StringValue>> list = new();
+List<ListValue<StringValue>> calenderList = new()
+{
+    daysCellReferences,
+    weekendCellReferences,
+    specialDaysCellReferences
+};
 
 Dictionary<string, uint> specialDaysFormats = new()
 {
@@ -134,12 +140,27 @@ Dictionary<string, uint> specialDaysFormats = new()
 
 Dictionary<string, string> specialDaysReferences = new();
 
-var rowIndex = 1U;
+List<HolidayModel> holidays = new()
+{
+    new HolidayModel()
+    {
+        Holiday = "Neujahr", 
+        HolidayStart = new DateTime(year, 1, 1),
+        HolidayEnd = new DateTime(year, 1, 1)
+    },
+    new HolidayModel()
+    {
+        Holiday = "Ostern", 
+        HolidayStart = new DateTime(year, 4, 6),
+        HolidayEnd = new DateTime(year, 4, 15)
+    }
+};
 
 #endregion
 
 #region Title
 
+var rowIndex = 1U;
 var titleRow = new Row().AddIndexToRow(rowIndex).AddCellsToRow(34);
 titleRow.Descendants<Cell>()
     .First()
@@ -419,7 +440,6 @@ for (var month = 1; month <= 12; month++)
     #endregion
 
     // Weekend Formating 
-    // TODO: Try List<ListValue<StringValue>()
     conditionList.Add(ConditionalsBuilder.WeekendFormatting(weekendCellReferences));
     weekendCellReferences = new ListValue<StringValue>();
 

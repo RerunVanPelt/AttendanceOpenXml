@@ -754,6 +754,19 @@ public static class StyleSheetBuilder
         };
         differentialFormats.Append(suFormat);
 
+        // FormatId = 8 - Holidays
+        DifferentialFormat holidaysFormat = new()
+        {
+            Fill = new Fill()
+            {
+                PatternFill = new PatternFill
+                {
+                    BackgroundColor = new BackgroundColor { Rgb = HexBinaryValue.FromString("CCFFCC") }
+                }
+            }
+        };
+        differentialFormats.Append(holidaysFormat);
+
         // Get number of DifferntialFormats
         differentialFormats.Count = (uint)differentialFormats.ChildElements.Count;
 
