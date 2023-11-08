@@ -2,6 +2,7 @@
 using DocumentFormat.OpenXml.Spreadsheet;
 
 
+
 namespace AttendanceLibrary;
 
 public static class StyleSheetBuilder
@@ -761,11 +762,48 @@ public static class StyleSheetBuilder
             {
                 PatternFill = new PatternFill
                 {
-                    BackgroundColor = new BackgroundColor { Rgb = HexBinaryValue.FromString("CCFFCC") }
+                    BackgroundColor = new BackgroundColor
+                        { Rgb = HexBinaryValue.FromString("CCFFCC") }
                 }
             }
         };
         differentialFormats.Append(holidaysFormat);
+
+        // FormatId = 9 - School holidays
+        DifferentialFormat schoolHolidaysFormat = new()
+        {
+            Fill = new Fill
+            {
+                PatternFill = new PatternFill
+                {
+                    BackgroundColor = new BackgroundColor
+                        { Rgb = HexBinaryValue.FromString("CCCCFF") }
+                }
+            }
+        };
+        differentialFormats.Append(schoolHolidaysFormat);
+
+        // FormatId = 10 - Cross Holidays
+        DifferentialFormat crossHolidaysFormat = new()
+        {
+            Fill = new Fill()
+            {
+                GradientFill = new GradientFill
+                (
+                    new GradientStop()
+                    {
+                        Color = new Color() { Rgb = HexBinaryValue.FromString("CCFFCC") },
+                        Position = 0.5
+                    },
+                    new GradientStop()
+                    {
+                        Color = new Color() { Rgb = HexBinaryValue.FromString("CCCCFF") },
+                        Position = 1.0
+                    }
+                )
+            }
+        };
+        differentialFormats.Append(crossHolidaysFormat);
 
         // Get number of DifferntialFormats
         differentialFormats.Count = (uint)differentialFormats.ChildElements.Count;

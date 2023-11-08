@@ -94,4 +94,100 @@ public static class ConditionalsBuilder
         condition.Append(uDayRule);
         return condition;
     }
+
+    public static ConditionalFormatting HolidaysFormatting(ListValue<StringValue> cellReferences)
+    {
+        var firstValue = cellReferences.First().Value;
+        var firstCell = firstValue?[..firstValue.IndexOf(":", StringComparison.Ordinal)];
+
+        var (column, row) = WorksheetProcessor.SplitCellReference(firstCell);
+
+        ConditionalFormatting condition = new()
+        {
+            SequenceOfReferences = cellReferences
+        };
+
+        ConditionalFormattingRule holidayRule = new()
+        {
+            Type = ConditionalFormatValues.Expression,
+            FormatId = 8U,
+            Priority = 2
+        };
+
+        Formula holidayFormula = new()
+        {
+            Text = $"MATCH({column}${row},\'2023_FT\'!$B:$B, 0)"
+        };
+
+        holidayRule.Append(holidayFormula);
+        condition.Append(holidayRule);
+
+        return condition;
+
+        // formula1925.Text = "AND(MATCH(C$13, \'2023_FT\'!$B:$B, 0), MATCH(C$13, \'2023_FT\'!$D:$D, 0))";
+    }
+
+    public static ConditionalFormatting SchoolHolidaysFormatting(ListValue<StringValue> cellReferences)
+    {
+        var firstValue = cellReferences.First().Value;
+        var firstCell = firstValue?[..firstValue.IndexOf(":", StringComparison.Ordinal)];
+
+        var (column, row) = WorksheetProcessor.SplitCellReference(firstCell);
+
+        ConditionalFormatting condition = new()
+        {
+            SequenceOfReferences = cellReferences
+        };
+
+        ConditionalFormattingRule holidayRule = new()
+        {
+            Type = ConditionalFormatValues.Expression,
+            FormatId = 9U,
+            Priority = 1
+        };
+
+        Formula holidayFormula = new()
+        {
+            Text = $"MATCH({column}${row},\'2023_FT\'!$D:$D, 0)"
+        };
+
+        holidayRule.Append(holidayFormula);
+        condition.Append(holidayRule);
+
+        return condition;
+
+        // formula1925.Text = "AND(MATCH(C$13, \'2023_FT\'!$B:$B, 0), MATCH(C$13, \'2023_FT\'!$D:$D, 0))";
+    }
+
+    public static ConditionalFormatting CrossHolidaysFormatting(ListValue<StringValue> cellReferences)
+    {
+        var firstValue = cellReferences.First().Value;
+        var firstCell = firstValue?[..firstValue.IndexOf(":", StringComparison.Ordinal)];
+
+        var (column, row) = WorksheetProcessor.SplitCellReference(firstCell);
+
+        ConditionalFormatting condition = new()
+        {
+            SequenceOfReferences = cellReferences
+        };
+
+        ConditionalFormattingRule holidayRule = new()
+        {
+            Type = ConditionalFormatValues.Expression,
+            FormatId = 10U,
+            Priority = 1
+        };
+
+        Formula holidayFormula = new()
+        {
+            Text = $"AND(MATCH({column}${row},\'2023_FT\'!$B:$B, 0), MATCH({column}${row},\'2023_FT\'!$D:$D, 0))"
+        };
+
+        holidayRule.Append(holidayFormula);
+        condition.Append(holidayRule);
+
+        return condition;
+
+        // formula1925.Text = "AND(MATCH(C$13, \'2023_FT\'!$B:$B, 0), MATCH(C$13, \'2023_FT\'!$D:$D, 0))";
+    }
 }

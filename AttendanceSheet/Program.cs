@@ -119,15 +119,6 @@ var daysCellReferences = new ListValue<StringValue>();
 var weekendCellReferences = new ListValue<StringValue>();
 var specialDaysCellReferences = new ListValue<StringValue>();
 
-
-// TODO: List with ListValue<StringValue>
-List<ListValue<StringValue>> calenderList = new()
-{
-    daysCellReferences,
-    weekendCellReferences,
-    specialDaysCellReferences
-};
-
 Dictionary<string, uint> specialDaysFormats = new()
 {
     { "U", 2U },
@@ -441,6 +432,9 @@ for (var month = 1; month <= 12; month++)
 
     // Weekend Formating 
     conditionList.Add(ConditionalsBuilder.WeekendFormatting(weekendCellReferences));
+    conditionList.Add(ConditionalsBuilder.HolidaysFormatting(weekendCellReferences));
+    conditionList.Add(ConditionalsBuilder.SchoolHolidaysFormatting(weekendCellReferences));
+    conditionList.Add(ConditionalsBuilder.CrossHolidaysFormatting(weekendCellReferences));
     weekendCellReferences = new ListValue<StringValue>();
 
     // Space between month table
