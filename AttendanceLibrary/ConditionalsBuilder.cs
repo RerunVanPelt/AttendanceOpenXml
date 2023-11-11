@@ -21,7 +21,8 @@ public static class ConditionalsBuilder
             Type = ConditionalFormatValues.TimePeriod,
             FormatId = 0U,
             Priority = 1,
-            TimePeriod = TimePeriodValues.Today
+            TimePeriod = TimePeriodValues.Today,
+            StopIfTrue = true
         };
 
 
@@ -51,7 +52,8 @@ public static class ConditionalsBuilder
         {
             Type = ConditionalFormatValues.Expression,
             FormatId = 1U,
-            Priority = 2
+            Priority = 2,
+            StopIfTrue = true
         };
 
         Formula weekendFormula = new()
@@ -81,8 +83,9 @@ public static class ConditionalsBuilder
         {
             Type = ConditionalFormatValues.CellIs,
             FormatId = formatId,
-            Priority = 1,
-            Operator = ConditionalFormattingOperatorValues.Equal
+            Priority = 3,
+            Operator = ConditionalFormattingOperatorValues.Equal,
+            StopIfTrue = true
         };
 
         Formula uDayFormula = new()
@@ -94,6 +97,42 @@ public static class ConditionalsBuilder
         condition.Append(uDayRule);
         return condition;
     }
+
+    public static ConditionalFormatting CrossHolidaysFormatting(
+        ListValue<StringValue> cellReferences)
+    {
+        var firstValue = cellReferences.First().Value;
+        var firstCell = firstValue?[..firstValue.IndexOf(":", StringComparison.Ordinal)];
+
+        var (column, row) = WorksheetProcessor.SplitCellReference(firstCell);
+
+        ConditionalFormatting condition = new()
+        {
+            SequenceOfReferences = cellReferences
+        };
+
+        ConditionalFormattingRule holidayRule = new()
+        {
+            Type = ConditionalFormatValues.Expression,
+            FormatId = 10U,
+            Priority = 4,
+            StopIfTrue = true
+        };
+
+        Formula holidayFormula = new()
+        {
+            Text =
+                $"AND(MATCH({column}${row},\'2023_FT\'!$B:$B, 0), MATCH({column}${row},\'2023_FT\'!$D:$D, 0))"
+        };
+
+        holidayRule.Append(holidayFormula);
+        condition.Append(holidayRule);
+
+        return condition;
+
+        // formula1925.Text = "AND(MATCH(C$13, \'2023_FT\'!$B:$B, 0), MATCH(C$13, \'2023_FT\'!$D:$D, 0))";
+    }
+
 
     public static ConditionalFormatting HolidaysFormatting(ListValue<StringValue> cellReferences)
     {
@@ -111,7 +150,8 @@ public static class ConditionalsBuilder
         {
             Type = ConditionalFormatValues.Expression,
             FormatId = 8U,
-            Priority = 2
+            Priority = 5,
+            StopIfTrue = true
         };
 
         Formula holidayFormula = new()
@@ -127,7 +167,8 @@ public static class ConditionalsBuilder
         // formula1925.Text = "AND(MATCH(C$13, \'2023_FT\'!$B:$B, 0), MATCH(C$13, \'2023_FT\'!$D:$D, 0))";
     }
 
-    public static ConditionalFormatting SchoolHolidaysFormatting(ListValue<StringValue> cellReferences)
+    public static ConditionalFormatting SchoolHolidaysFormatting(
+        ListValue<StringValue> cellReferences)
     {
         var firstValue = cellReferences.First().Value;
         var firstCell = firstValue?[..firstValue.IndexOf(":", StringComparison.Ordinal)];
@@ -143,44 +184,13 @@ public static class ConditionalsBuilder
         {
             Type = ConditionalFormatValues.Expression,
             FormatId = 9U,
-            Priority = 1
+            Priority = 5,
+            StopIfTrue = true
         };
 
         Formula holidayFormula = new()
         {
             Text = $"MATCH({column}${row},\'2023_FT\'!$D:$D, 0)"
-        };
-
-        holidayRule.Append(holidayFormula);
-        condition.Append(holidayRule);
-
-        return condition;
-
-        // formula1925.Text = "AND(MATCH(C$13, \'2023_FT\'!$B:$B, 0), MATCH(C$13, \'2023_FT\'!$D:$D, 0))";
-    }
-
-    public static ConditionalFormatting CrossHolidaysFormatting(ListValue<StringValue> cellReferences)
-    {
-        var firstValue = cellReferences.First().Value;
-        var firstCell = firstValue?[..firstValue.IndexOf(":", StringComparison.Ordinal)];
-
-        var (column, row) = WorksheetProcessor.SplitCellReference(firstCell);
-
-        ConditionalFormatting condition = new()
-        {
-            SequenceOfReferences = cellReferences
-        };
-
-        ConditionalFormattingRule holidayRule = new()
-        {
-            Type = ConditionalFormatValues.Expression,
-            FormatId = 10U,
-            Priority = 1
-        };
-
-        Formula holidayFormula = new()
-        {
-            Text = $"AND(MATCH({column}${row},\'2023_FT\'!$B:$B, 0), MATCH({column}${row},\'2023_FT\'!$D:$D, 0))"
         };
 
         holidayRule.Append(holidayFormula);

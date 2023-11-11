@@ -1,12 +1,11 @@
-﻿using AttendanceLibrary;
+﻿using System.Diagnostics;
+using AttendanceLibrary;
 using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Spreadsheet;
 using OpenXmlEngine;
 using OpenXmlEngine.HelperClasses;
 using System.Globalization;
-using AttendanceLibrary.Models;
-using DocumentFormat.OpenXml.Office2010.ExcelAc;
 
 const string filePath = @"D:\SampleData\OpenXmlSamples\attendace.xlsx";
 
@@ -111,15 +110,24 @@ wsPart.Worksheet.InsertBefore(columns, firstSheetData);
 
 #region Lists
 
+// Style
 var rowList = new List<Row>();
 var mergeList = new List<MergeCell>();
+
+// Conditions
 var conditionList = new List<ConditionalFormatting>();
 
-var daysCellReferences = new ListValue<StringValue>();
-var weekendCellReferences = new ListValue<StringValue>();
-var specialDaysCellReferences = new ListValue<StringValue>();
+var dayCellReferences = new ListValue<StringValue>();
+var dayList = new List<StringValue>();
 
-Dictionary<string, uint> specialDaysFormats = new()
+var tableCellReferences = new ListValue<StringValue>();
+var tablePartialList = new List<StringValue>();
+var tableList = new List<StringValue>();
+
+var completeCellReferences = new ListValue<StringValue>();
+var completeList = new List<ListValue<StringValue>>();
+
+Dictionary<string, uint> specialDayFormat = new()
 {
     { "U", 2U },
     { "GZ", 3U },
@@ -129,23 +137,7 @@ Dictionary<string, uint> specialDaysFormats = new()
     { "SU", 7U }
 };
 
-Dictionary<string, string> specialDaysReferences = new();
-
-List<HolidayModel> holidays = new()
-{
-    new HolidayModel()
-    {
-        Holiday = "Neujahr", 
-        HolidayStart = new DateTime(year, 1, 1),
-        HolidayEnd = new DateTime(year, 1, 1)
-    },
-    new HolidayModel()
-    {
-        Holiday = "Ostern", 
-        HolidayStart = new DateTime(year, 4, 6),
-        HolidayEnd = new DateTime(year, 4, 15)
-    }
-};
+Dictionary<string, string> specialDayReference = new();
 
 #endregion
 
@@ -197,7 +189,7 @@ for (var i = 0; i < cells.Count; i++)
             if (firstValue != null &&
                 lastValue != null)
             {
-                specialDaysReferences.Add(firstValue, lastValue);
+                specialDayReference.Add(firstValue, lastValue);
             }
 
             i += 3;
@@ -386,8 +378,8 @@ for (var month = 1; month <= 12; month++)
     }
 
     // Cell References for Conditional Formatting 
-    daysCellReferences.Items.Add($"{cells[2].CellReference}:{cells.Last().CellReference}");
-    weekendCellReferences.Items.Add($"{cells[2].CellReference}:{cells.Last().CellReference}");
+    // Today
+    dayList.Add(new StringValue($"{cells[2].CellReference}:{cells.Last().CellReference}"));
 
     // Add Row to List
     rowList.Add(daysRow);
@@ -418,11 +410,10 @@ for (var month = 1; month <= 12; month++)
             }
         }
 
-
-        // Cell References for Conditional Formatting
-        weekendCellReferences.Items.Add($"{cells[2].CellReference}:{cells.Last().CellReference}");
-        specialDaysCellReferences.Items.Add(
-            $"{cells[2].CellReference}:{cells.Last().CellReference}");
+        // Cell References for Conditional Formatting 
+        // Table (Partial)
+        tablePartialList.Add(
+            new StringValue($"{cells[2].CellReference}:{cells.Last().CellReference}"));
 
         // Add Row to List
         rowList.Add(employeeRow);
@@ -430,12 +421,10 @@ for (var month = 1; month <= 12; month++)
 
     #endregion
 
-    // Weekend Formating 
-    conditionList.Add(ConditionalsBuilder.WeekendFormatting(weekendCellReferences));
-    conditionList.Add(ConditionalsBuilder.HolidaysFormatting(weekendCellReferences));
-    conditionList.Add(ConditionalsBuilder.SchoolHolidaysFormatting(weekendCellReferences));
-    conditionList.Add(ConditionalsBuilder.CrossHolidaysFormatting(weekendCellReferences));
-    weekendCellReferences = new ListValue<StringValue>();
+    // Cell References for Conditional Formatting 
+    // Table
+    tableList.Add(WorksheetProcessor.GetRange(tablePartialList));
+    tablePartialList.Clear();
 
     // Space between month table
     ++rowIndex;
@@ -452,23 +441,45 @@ mergeCells.Append(mergeList);
 ws.Append(mergeCells);
 
 // Append conditional formatting
-conditionList.Add(ConditionalsBuilder.TodayFormatting(daysCellReferences));
+// Today
+dayList.ForEach(v => dayCellReferences.Items.Add(v.Value));
+conditionList.Add(ConditionalsBuilder.TodayFormatting(dayCellReferences));
 
-foreach (var reference in specialDaysReferences)
-{
-    var format = specialDaysFormats.First(c => c.Key == reference.Key).Value;
+// Weekend
+completeList = WorksheetProcessor.JoinLists(dayList, tableList);
 
-    conditionList.Add(ConditionalsBuilder.SpecialDayFormatting(
-        specialDaysCellReferences,
+conditionList.AddRange(
+    from reference in completeList
+    select ConditionalsBuilder.WeekendFormatting(reference));
+
+// Special Day
+tableList.ForEach(i => tableCellReferences.Items.Add(i.Value));
+conditionList.AddRange(from reference in specialDayReference
+    let format = specialDayFormat.First(c => c.Key == reference.Key)
+        .Value
+    select ConditionalsBuilder.SpecialDayFormatting(tableCellReferences,
         reference.Value,
         format));
-}
 
+// Cross
+conditionList.AddRange(
+    from reference in completeList
+    select ConditionalsBuilder.CrossHolidaysFormatting(reference));
 
+// Holidays
+conditionList.AddRange(
+    from reference in completeList
+    select ConditionalsBuilder.HolidaysFormatting(reference));
+
+// SchoolHolidays
+conditionList.AddRange(
+    from reference in completeList
+    select ConditionalsBuilder.SchoolHolidaysFormatting(reference));
+
+// Spreadsheet
 ws.Append(conditionList);
-
-
 spreadsheet.Dispose();
+
 
 //Console.WriteLine("Press any key to exit application ...");
 //Console.ReadKey();
