@@ -1,8 +1,6 @@
 ﻿using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Spreadsheet;
 
-
-
 namespace AttendanceLibrary;
 
 public static class StyleSheetBuilder
@@ -81,7 +79,7 @@ public static class StyleSheetBuilder
             PatternFill = new PatternFill
             {
                 PatternType = PatternValues.Solid,
-                ForegroundColor = new ForegroundColor { Rgb = HexBinaryValue.FromString("99CCFF") }
+                ForegroundColor = new ForegroundColor { Rgb = HexBinaryValue.FromString("FCE4D6") }
             }
         };
         fills.Append(gzFill);
@@ -693,7 +691,7 @@ public static class StyleSheetBuilder
                 PatternFill = new PatternFill()
                 {
                     BackgroundColor = new BackgroundColor
-                        { Rgb = HexBinaryValue.FromString("99CCFF") }
+                        { Rgb = HexBinaryValue.FromString("FCE4D6") }
                 }
             }
         };
@@ -793,7 +791,7 @@ public static class StyleSheetBuilder
                     new GradientStop()
                     {
                         Color = new Color() { Rgb = HexBinaryValue.FromString("CCFFCC") },
-                        Position = 0.5
+                        Position = 0.0
                     },
                     new GradientStop()
                     {
@@ -810,7 +808,6 @@ public static class StyleSheetBuilder
 
         return differentialFormats;
     }
-
 
     public static NumberingFormats NumberingFormats()
     {

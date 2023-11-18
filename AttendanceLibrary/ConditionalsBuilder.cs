@@ -99,7 +99,7 @@ public static class ConditionalsBuilder
     }
 
     public static ConditionalFormatting CrossHolidaysFormatting(
-        ListValue<StringValue> cellReferences)
+        ListValue<StringValue> cellReferences, string sheetName)
     {
         var firstValue = cellReferences.First().Value;
         var firstCell = firstValue?[..firstValue.IndexOf(":", StringComparison.Ordinal)];
@@ -122,19 +122,17 @@ public static class ConditionalsBuilder
         Formula holidayFormula = new()
         {
             Text =
-                $"AND(MATCH({column}${row},\'2023_FT\'!$B:$B, 0), MATCH({column}${row},\'2023_FT\'!$D:$D, 0))"
+                $"AND(MATCH({column}${row},\'{sheetName}\'!$B:$B, 0), MATCH({column}${row},\'{sheetName}\'!$D:$D, 0))"
         };
 
         holidayRule.Append(holidayFormula);
         condition.Append(holidayRule);
 
         return condition;
-
-        // formula1925.Text = "AND(MATCH(C$13, \'2023_FT\'!$B:$B, 0), MATCH(C$13, \'2023_FT\'!$D:$D, 0))";
     }
 
 
-    public static ConditionalFormatting HolidaysFormatting(ListValue<StringValue> cellReferences)
+    public static ConditionalFormatting HolidaysFormatting(ListValue<StringValue> cellReferences, string sheetName)
     {
         var firstValue = cellReferences.First().Value;
         var firstCell = firstValue?[..firstValue.IndexOf(":", StringComparison.Ordinal)];
@@ -156,19 +154,17 @@ public static class ConditionalsBuilder
 
         Formula holidayFormula = new()
         {
-            Text = $"MATCH({column}${row},\'2023_FT\'!$B:$B, 0)"
+            Text = $"MATCH({column}${row},\'{sheetName}\'!$B:$B, 0)"
         };
 
         holidayRule.Append(holidayFormula);
         condition.Append(holidayRule);
 
         return condition;
-
-        // formula1925.Text = "AND(MATCH(C$13, \'2023_FT\'!$B:$B, 0), MATCH(C$13, \'2023_FT\'!$D:$D, 0))";
     }
 
     public static ConditionalFormatting SchoolHolidaysFormatting(
-        ListValue<StringValue> cellReferences)
+        ListValue<StringValue> cellReferences, string sheetName)
     {
         var firstValue = cellReferences.First().Value;
         var firstCell = firstValue?[..firstValue.IndexOf(":", StringComparison.Ordinal)];
@@ -190,14 +186,12 @@ public static class ConditionalsBuilder
 
         Formula holidayFormula = new()
         {
-            Text = $"MATCH({column}${row},\'2023_FT\'!$D:$D, 0)"
+            Text = $"MATCH({column}${row},\'{sheetName}\'!$D:$D, 0)"
         };
 
         holidayRule.Append(holidayFormula);
         condition.Append(holidayRule);
 
         return condition;
-
-        // formula1925.Text = "AND(MATCH(C$13, \'2023_FT\'!$B:$B, 0), MATCH(C$13, \'2023_FT\'!$D:$D, 0))";
     }
 }

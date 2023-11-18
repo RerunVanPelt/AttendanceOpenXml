@@ -1,5 +1,4 @@
-﻿using System.Diagnostics;
-using AttendanceLibrary;
+﻿using AttendanceLibrary;
 using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Spreadsheet;
@@ -9,7 +8,7 @@ using System.Globalization;
 
 const string filePath = @"D:\SampleData\OpenXmlSamples\attendace.xlsx";
 
-var year = DateTime.Now.Year;
+var year = DateTime.Now.Year + 2;
 
 SpreadsheetProcessor excel = new(filePath);
 var firstSheetName = $"{year}";
@@ -17,7 +16,7 @@ var secondSheetName = $"{year}_FT";
 
 var headlineList = new List<string>()
 {
-    "Mitarbeiter",
+    "Mitarbeiter /-innen",
     "U", "Urlaub",
     "GZ", "Gleitzeit",
     "HO", "Home-office",
@@ -30,16 +29,22 @@ var headlineList = new List<string>()
 
 var employeeList = new List<string>()
 {
-    "Employee 1",
-    "Employee 2",
-    "Employee 3",
-    "Employee 4",
-    "Employee 5",
-    "Employee 6",
-    "Employee 7"
+    "Empployee 1",
+    "Empployee 1",
+    "Empployee 1",
+    "Empployee 1",
+    "Empployee 1",
+    "Empployee 1",
+    "Empployee 1"
 };
 
-excel.CreateSpreadsheet(new[]
+//excel.CreateSpreadsheet(new[]
+//{
+//    firstSheetName,
+//    secondSheetName
+//});
+
+excel.AddSheetsToSpreadsheet(new[]
 {
     firstSheetName,
     secondSheetName
@@ -72,19 +77,29 @@ var mergeCells = ws.Elements<MergeCells>().Any()
 #region Style
 
 // Numbering Formats
-styleSheet.AppendChild(StyleSheetBuilder.NumberingFormats());
+var numberingFormats = styleSheet.ChildElements.OfType<NumberingFormats>().Any()
+    ? styleSheet.Elements<NumberingFormats>().First()
+    : styleSheet.AppendChild(StyleSheetBuilder.NumberingFormats());
 
 // Fonts
-styleSheet.AppendChild(StyleSheetBuilder.SetFonts());
+var fonts = styleSheet.ChildElements.OfType<Fonts>().Any()
+    ? styleSheet.Elements<Fonts>().First()
+    : styleSheet.AppendChild(StyleSheetBuilder.SetFonts());
 
 // Fills
-styleSheet.AppendChild(StyleSheetBuilder.SetFills());
+var fills = styleSheet.ChildElements.OfType<Fills>().Any()
+    ? styleSheet.Elements<Fills>().First()
+    : styleSheet.AppendChild(StyleSheetBuilder.SetFills());
 
 // Borders
-styleSheet.AppendChild(StyleSheetBuilder.SetBorders());
+var borders = styleSheet.ChildElements.OfType<Borders>().Any()
+    ? styleSheet.Elements<Borders>().First()
+    : styleSheet.AppendChild(StyleSheetBuilder.SetBorders());
 
 // CellFormats
-styleSheet.AppendChild(StyleSheetBuilder.SetCellFormats());
+var cellFormats = styleSheet.ChildElements.OfType<CellFormats>().Any()
+    ? styleSheet.Elements<CellFormats>().First()
+    : styleSheet.AppendChild(StyleSheetBuilder.SetCellFormats());
 
 //TODO: CellStyleFormats
 //styleSheet.AppendChild<CellStyleFormats>(StyleSheetBuilder.SetCellStyleFormats());
@@ -93,7 +108,9 @@ styleSheet.AppendChild(StyleSheetBuilder.SetCellFormats());
 //styleSheet.AppendChild<CellStyles>(StyleSheetBuilder.SetCellStyles());
 
 // DifferntialFormats
-styleSheet.AppendChild(StyleSheetBuilder.SetDifferentialFormats());
+var differentilaFormats = styleSheet.ChildElements.OfType<DifferentialFormats>().Any()
+    ? styleSheet.Elements<DifferentialFormats>().First()
+    : styleSheet.AppendChild(StyleSheetBuilder.SetDifferentialFormats());
 
 //TODO: TableStyles
 
@@ -124,9 +141,6 @@ var tableCellReferences = new ListValue<StringValue>();
 var tablePartialList = new List<StringValue>();
 var tableList = new List<StringValue>();
 
-var completeCellReferences = new ListValue<StringValue>();
-var completeList = new List<ListValue<StringValue>>();
-
 Dictionary<string, uint> specialDayFormat = new()
 {
     { "U", 2U },
@@ -136,8 +150,12 @@ Dictionary<string, uint> specialDayFormat = new()
     { "AU", 6U },
     { "SU", 7U }
 };
+Dictionary<string, string> specialDayPosition = new();
 
-Dictionary<string, string> specialDayReference = new();
+// Computing
+
+Dictionary<string, List<Cell>> formulaPosition = new();
+Dictionary<string, ListValue<StringValue>> formulaRange = new();
 
 #endregion
 
@@ -189,7 +207,7 @@ for (var i = 0; i < cells.Count; i++)
             if (firstValue != null &&
                 lastValue != null)
             {
-                specialDayReference.Add(firstValue, lastValue);
+                specialDayPosition.Add(firstValue, lastValue);
             }
 
             i += 3;
@@ -231,6 +249,8 @@ foreach (var employee in employeeList)
 
     var employeeRow = new Row().AddIndexToRow(++rowIndex).AddCellsToRow(34);
 
+    var positions = new List<Cell>();
+
     cells = employeeRow.Descendants<Cell>().ToList();
     for (var i = 0; i < cells.Count; i++)
     {
@@ -254,6 +274,7 @@ foreach (var employee in employeeList)
                 mergeList.Add(new MergeCell().AddMergeCell(
                     cells[i].CellReference,
                     cells[i + 3].CellReference));
+                positions.Add(cells[i]);
                 i += 3;
                 break;
 
@@ -266,11 +287,13 @@ foreach (var employee in employeeList)
                 mergeList.Add(new MergeCell().AddMergeCell(
                     cells[i].CellReference,
                     cells[i + 3].CellReference));
+                positions.Add(cells[i]);
                 i += 3;
                 break;
         }
     }
 
+    formulaPosition.Add(employee, positions);
     rowList.Add(employeeRow);
 }
 
@@ -278,7 +301,6 @@ foreach (var employee in employeeList)
 ++rowIndex;
 
 #endregion
-
 
 #region Calender
 
@@ -415,11 +437,27 @@ for (var month = 1; month <= 12; month++)
         tablePartialList.Add(
             new StringValue($"{cells[2].CellReference}:{cells.Last().CellReference}"));
 
+        // Computing
+        if (!formulaRange.ContainsKey(employee))
+        {
+            formulaRange.Add(employee, new ListValue<StringValue>
+            {
+                Items =
+                {
+                    new StringValue($"{cells[2].CellReference}:{cells.Last().CellReference}")
+                }
+            });
+        }
+        else
+        {
+            formulaRange[employee].Items
+                .Add($"{cells[2].CellReference}:{cells.Last().CellReference}");
+        }
+
         // Add Row to List
         rowList.Add(employeeRow);
     }
 
-    #endregion
 
     // Cell References for Conditional Formatting 
     // Table
@@ -428,25 +466,96 @@ for (var month = 1; month <= 12; month++)
 
     // Space between month table
     ++rowIndex;
+
+    #endregion
+}
+
+#endregion
+
+#region Equations
+
+var cellsRange = formulaPosition[employeeList[0]];
+
+foreach (var item in formulaPosition)
+{
+    var range = formulaRange[item.Key];
+
+    foreach (var c in item.Value)
+    {
+        //Debug.WriteLine(item.Value.IndexOf(c));
+        switch (item.Value.IndexOf(c))
+        {
+            case 0:
+                c.DataType = CellValues.Number;
+                c.CellFormula = new CellFormula()
+                {
+                    Text = EquationBuilder.SumCountIf(range, specialDayPosition["U"])
+                };
+                break;
+            case 1:
+                c.DataType = CellValues.Number;
+                c.CellFormula = new CellFormula()
+                {
+                    Text = EquationBuilder.SumCountIf(range, specialDayPosition["GZ"])
+                };
+                break;
+            case 2:
+                c.DataType = CellValues.Number;
+                c.CellFormula = new CellFormula()
+                {
+                    Text = EquationBuilder.SumCountIf(range, specialDayPosition["HO"])
+                };
+                break;
+            case 3:
+                c.DataType = CellValues.Number;
+                c.CellFormula = new CellFormula()
+                {
+                    Text = EquationBuilder.SumCountIf(range, specialDayPosition["D"])
+                };
+                break;
+            case 4:
+                c.DataType = CellValues.Number;
+                c.CellFormula = new CellFormula()
+                {
+                    Text = EquationBuilder.SumCountIf(range, specialDayPosition["AU"])
+                };
+                break;
+            case 5:
+                c.DataType = CellValues.Number;
+                c.CellFormula = new CellFormula()
+                {
+                    Text = EquationBuilder.SumCountIf(range, specialDayPosition["SU"])
+                };
+                break;
+            case 6:
+                c.DataType = CellValues.Number;
+                c.CellValue = new CellValue()
+                {
+                    Text = "30"
+                };
+                break;
+            case 7:
+                c.DataType = CellValues.Number;
+                c.CellFormula = new CellFormula()
+                {
+                    Text = EquationBuilder.Subtraktion(item.Value[6], item.Value[0])
+                };
+                break;
+        }
+    }
 }
 
 #endregion
 
 
-// Append rows
-firstSheetData?.Append(rowList);
+#region Conditional Formatting
 
-// Append merge cells
-mergeCells.Append(mergeList);
-ws.Append(mergeCells);
-
-// Append conditional formatting
 // Today
 dayList.ForEach(v => dayCellReferences.Items.Add(v.Value));
 conditionList.Add(ConditionalsBuilder.TodayFormatting(dayCellReferences));
 
 // Weekend
-completeList = WorksheetProcessor.JoinLists(dayList, tableList);
+var completeList = WorksheetProcessor.JoinLists(dayList, tableList);
 
 conditionList.AddRange(
     from reference in completeList
@@ -454,32 +563,53 @@ conditionList.AddRange(
 
 // Special Day
 tableList.ForEach(i => tableCellReferences.Items.Add(i.Value));
-conditionList.AddRange(from reference in specialDayReference
-    let format = specialDayFormat.First(c => c.Key == reference.Key)
-        .Value
-    select ConditionalsBuilder.SpecialDayFormatting(tableCellReferences,
-        reference.Value,
-        format));
+conditionList.AddRange(from reference in specialDayPosition
+                       let format = specialDayFormat.First(c => c.Key == reference.Key)
+                           .Value
+                       select ConditionalsBuilder.SpecialDayFormatting(tableCellReferences,
+                           reference.Value,
+                           format));
 
 // Cross
 conditionList.AddRange(
     from reference in completeList
-    select ConditionalsBuilder.CrossHolidaysFormatting(reference));
+    select ConditionalsBuilder.CrossHolidaysFormatting(reference, secondSheetName));
 
 // Holidays
 conditionList.AddRange(
     from reference in completeList
-    select ConditionalsBuilder.HolidaysFormatting(reference));
+    select ConditionalsBuilder.HolidaysFormatting(reference, secondSheetName));
 
 // SchoolHolidays
 conditionList.AddRange(
     from reference in completeList
-    select ConditionalsBuilder.SchoolHolidaysFormatting(reference));
+    select ConditionalsBuilder.SchoolHolidaysFormatting(reference, secondSheetName));
 
-// Spreadsheet
+#endregion
+
+#region Split Window
+
+// TODO: Split
+
+#endregion
+
+
+#region Spreadsheet build
+
+// Append rows
+firstSheetData?.Append(rowList);
+// Append merge cells
+mergeCells.Append(mergeList);
+ws.Append(mergeCells);
+//Append Conditional formatting
 ws.Append(conditionList);
 spreadsheet.Dispose();
 
+#endregion
 
-//Console.WriteLine("Press any key to exit application ...");
+
+Console.WriteLine("Press any key to exit application ...");
 //Console.ReadKey();
+
+
+// 
